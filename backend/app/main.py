@@ -62,7 +62,13 @@ app.include_router(drivers.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(websocket.router)
 
-# Serve frontend static files
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "app": settings.APP_NAME}
+
+
+# SPA catch-all — must be registered LAST so API routes take priority
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
 if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory=frontend_path), name="static")
@@ -77,8 +83,3 @@ if os.path.exists(frontend_path):
         if os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(os.path.join(frontend_path, "index.html"))
-
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok", "app": settings.APP_NAME}

@@ -16,7 +16,7 @@ from app.routers.websocket import manager
 router = APIRouter(prefix="/rides", tags=["Rides"])
 
 
-@router.post("/estimate", response_model=List[FareEstimate])
+@router.get("/estimate", response_model=List[FareEstimate])
 async def estimate_fare(
     origin_lat: float, origin_lng: float,
     dest_lat: float, dest_lng: float,
