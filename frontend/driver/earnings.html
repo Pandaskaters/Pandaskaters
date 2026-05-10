@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<title>PandaSkaters – Ganancias</title>
+<link rel="stylesheet" href="../css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.earnings-hero {
+  background: linear-gradient(160deg, #0d1a00, var(--bg-primary));
+  padding: calc(var(--header-h) + 1.5rem) 1.25rem 2.5rem;
+  text-align: center;
+  position: relative;
+}
+.earnings-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(198,241,53,.12) 0%, transparent 65%);
+}
+.big-earning { font-size: 3rem; font-weight: 900; color: var(--accent); line-height: 1; }
+.big-earning-label { color: var(--text-muted); font-size: .82rem; margin-top: .3rem; }
+.chart-bar-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: .4rem;
+  height: 100px;
+  padding: .5rem 0;
+}
+.chart-bar {
+  flex: 1;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 4px;
+}
+.chart-bar .fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--accent);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  opacity: .8;
+  transition: height .6s cubic-bezier(.34,1.56,.64,1);
+}
+.chart-bar.active .fill { opacity: 1; box-shadow: 0 0 12px var(--accent); }
+.chart-day { text-align: center; font-size: .6rem; color: var(--text-muted); margin-top: .25rem; }
+.ride-row {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: .5rem;
+  background: var(--bg-card);
+}
+.ride-row-icon { width:38px; height:38px; border-radius:var(--radius-md); background:var(--accent-subtle); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.ride-row-info { flex:1; min-width:0; }
+.ride-row-route { font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ride-row-time { font-size:.7rem; color:var(--text-muted); }
+.ride-row-fare { font-weight:800; color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="header-logo">Panda<span>Skaters</span></div>
+    <div style="font-size:.85rem;font-weight:600;color:var(--text-secondary)">Ganancias</div>
+  </header>
+
+  <!-- Hero -->
+  <div class="earnings-hero">
+    <div class="big-earning" id="totalEarnings">$0.00</div>
+    <div class="big-earning-label">Ganancias esta semana</div>
+    <div style="display:flex;justify-content:center;gap:2rem;margin-top:1.25rem;position:relative">
+      <div style="text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--text-primary)" id="weekTrips">0</div>
+        <div style="font-size:.65rem;color:var(--text-muted)">Viajes</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--text-primary)" id="weekAvg">$0</div>
+        <div style="font-size:.65rem;color:var(--text-muted)">Promedio</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--text-primary)" id="driverRating2">5.0⭐</div>
+        <div style="font-size:.65rem;color:var(--text-muted)">Rating</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="page" style="padding-top:0">
+    <div class="page-content" style="padding-top:1rem">
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <h4>Esta semana</h4>
+          <span style="font-size:.7rem;color:var(--accent)">Por día</span>
+        </div>
+        <div class="chart-bar-wrap" id="weekChart"></div>
+        <div style="display:flex;gap:.4rem" id="weekDays"></div>
+      </div>
+
+      <!-- Ride history -->
+      <h4 style="margin-bottom:.75rem">Viajes Recientes</h4>
+      <div id="driverRidesList">
+        <div class="empty-state">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="home.html"><i class="fa fa-house"></i><span>Inicio</span></a>
+    <a class="nav-item active" href="earnings.html"><i class="fa fa-wallet"></i><span>Ganancias</span></a>
+    <a class="nav-item" href="profile.html"><i class="fa fa-user-circle"></i><span>Perfil</span></a>
+  </nav>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="../js/api.js"></script>
+<script>
+const user = JSON.parse(localStorage.getItem('ps_user')||'null');
+if (!user || user.role !== 'driver') location.href = '../index.html';
+
+const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const todayIdx = new Date().getDay();
+
+async function loadEarnings() {
+  try {
+    const rides = await api.get('/drivers/me/rides');
+    const completed = rides.filter(r => r.status === 'completed');
+
+    // Weekly chart data (last 7 days mock based on rides)
+    const weekData = [0,0,0,0,0,0,0];
+    completed.forEach(r => {
+      const d = new Date(r.completed_at || r.requested_at);
+      const diff = Math.floor((Date.now() - d) / 86400000);
+      if (diff < 7) weekData[6 - diff] += (r.final_fare || r.estimated_fare || 0);
+    });
+
+    const total = weekData.reduce((a,b)=>a+b,0);
+    document.getElementById('totalEarnings').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('weekTrips').textContent = completed.length;
+    document.getElementById('weekAvg').textContent = completed.length ? `$${(total/completed.length).toFixed(0)}` : '$0';
+
+    const driver = JSON.parse(localStorage.getItem('ps_driver')||'null');
+    document.getElementById('driverRating2').textContent = `${(driver?.rating||5).toFixed(1)}⭐`;
+
+    // Render chart
+    const maxVal = Math.max(...weekData, 1);
+    const chartEl = document.getElementById('weekChart');
+    const daysEl = document.getElementById('weekDays');
+    chartEl.innerHTML = weekData.map((v,i) => {
+      const pct = (v/maxVal*100).toFixed(1);
+      const isToday = (todayIdx - (6-i) + 7) % 7 === todayIdx % 7;
+      return `<div class="chart-bar${isToday?' active':''}"><div class="fill" style="height:${pct}%"></div></div>`;
+    }).join('');
+    daysEl.innerHTML = weekData.map((_,i) => {
+      const dayIdx = (todayIdx - (6-i) + 7) % 7;
+      return `<div class="chart-day" style="flex:1">${days[dayIdx]}</div>`;
+    }).join('');
+
+    // Rides list
+    const listEl = document.getElementById('driverRidesList');
+    if (!completed.length) {
+      listEl.innerHTML = '<div class="empty-state"><i class="fa fa-road" style="font-size:3rem;color:var(--border)"></i><p style="margin-top:1rem">Sin viajes completados</p></div>';
+      return;
+    }
+    listEl.innerHTML = completed.slice(0,20).map(r => {
+      const date = new Date(r.completed_at||r.requested_at).toLocaleDateString('es',{day:'2-digit',month:'short'});
+      return `<div class="ride-row">
+        <div class="ride-row-icon">🚗</div>
+        <div class="ride-row-info">
+          <div class="ride-row-route">${r.origin_address} → ${r.destination_address}</div>
+          <div class="ride-row-time">${date} · ${(r.estimated_distance_km||0).toFixed(1)} km</div>
+        </div>
+        <div class="ride-row-fare">$${(r.final_fare||r.estimated_fare||0).toFixed(2)}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('driverRidesList').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">Error cargando datos</p>';
+  }
+}
+loadEarnings();
+</script>
+</body>
+</html>

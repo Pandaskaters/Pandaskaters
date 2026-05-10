@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<title>PandaSkaters – Perfil</title>
+<link rel="stylesheet" href="../css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.profile-hero {
+  background: linear-gradient(160deg, #0d1a00, #0a0a0f);
+  padding: calc(var(--header-h) + 1.5rem) 1.25rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.profile-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 80%, rgba(198,241,53,.1) 0%, transparent 70%);
+}
+.profile-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+.avatar-edit-btn {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg-primary);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-inverse);
+  font-size: .7rem;
+  cursor: pointer;
+}
+.profile-name { font-size: 1.4rem; font-weight: 800; margin-bottom: .2rem; }
+.profile-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+  position: relative;
+}
+.p-stat { text-align: center; }
+.p-stat-val { font-size: 1.3rem; font-weight: 800; color: var(--accent); }
+.p-stat-lab { font-size: .65rem; color: var(--text-muted); }
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.menu-item:hover { background: var(--bg-elevated); border-color: var(--border); }
+.menu-icon {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.menu-label { flex: 1; font-weight: 500; }
+.menu-chevron { color: var(--text-muted); font-size: .8rem; }
+.danger-zone .menu-icon { background: rgba(239,68,68,.1); color: var(--danger); }
+.danger-zone .menu-label { color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="header-logo">Panda<span>Skaters</span></div>
+    <button class="btn btn-icon" onclick="editProfile()"><i class="fa fa-pen"></i></button>
+  </header>
+
+  <!-- Profile Hero -->
+  <div class="profile-hero">
+    <div class="profile-avatar-wrap">
+      <div class="avatar avatar-xl" id="profileAvatar">
+        <i class="fa fa-user" style="font-size:2.5rem"></i>
+      </div>
+      <div class="avatar-edit-btn" onclick="editProfile()">
+        <i class="fa fa-camera"></i>
+      </div>
+    </div>
+    <div class="profile-name" id="profileName">–</div>
+    <div style="color:var(--text-muted);font-size:.82rem" id="profileEmail">–</div>
+    <div class="profile-stats">
+      <div class="p-stat">
+        <div class="p-stat-val" id="statRides">0</div>
+        <div class="p-stat-lab">Viajes</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-val" id="statRating">5.0</div>
+        <div class="p-stat-lab">Rating</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-val">✓</div>
+        <div class="p-stat-lab">Verificado</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div class="page" style="padding-top:0">
+    <div class="page-content" style="padding-top:1rem">
+
+      <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden">
+        <a class="menu-item" href="#">
+          <div class="menu-icon"><i class="fa fa-user-pen"></i></div>
+          <span class="menu-label">Editar Perfil</span>
+          <i class="fa fa-chevron-right menu-chevron"></i>
+        </a>
+        <hr class="divider" style="margin:.25rem 1rem">
+        <a class="menu-item" href="#">
+          <div class="menu-icon"><i class="fa fa-bell"></i></div>
+          <span class="menu-label">Notificaciones</span>
+          <i class="fa fa-chevron-right menu-chevron"></i>
+        </a>
+        <hr class="divider" style="margin:.25rem 1rem">
+        <a class="menu-item" href="#">
+          <div class="menu-icon"><i class="fa fa-shield-halved"></i></div>
+          <span class="menu-label">Privacidad y Seguridad</span>
+          <i class="fa fa-chevron-right menu-chevron"></i>
+        </a>
+        <hr class="divider" style="margin:.25rem 1rem">
+        <a class="menu-item" href="history.html">
+          <div class="menu-icon"><i class="fa fa-clock-rotate-left"></i></div>
+          <span class="menu-label">Historial de Viajes</span>
+          <i class="fa fa-chevron-right menu-chevron"></i>
+        </a>
+      </div>
+
+      <div class="card danger-zone" style="padding:0;overflow:hidden">
+        <a class="menu-item" href="#" onclick="logout()">
+          <div class="menu-icon"><i class="fa fa-right-from-bracket"></i></div>
+          <span class="menu-label">Cerrar Sesión</span>
+          <i class="fa fa-chevron-right menu-chevron"></i>
+        </a>
+      </div>
+
+      <div style="text-align:center;margin-top:2rem;color:var(--text-muted);font-size:.72rem">
+        PandaSkaters v1.0.0 · Todos los derechos reservados
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="home.html"><i class="fa fa-house"></i><span>Inicio</span></a>
+    <a class="nav-item" href="history.html"><i class="fa fa-clock-rotate-left"></i><span>Historial</span></a>
+    <a class="nav-item active" href="profile.html"><i class="fa fa-user-circle"></i><span>Perfil</span></a>
+  </nav>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="../js/api.js"></script>
+<script>
+const user = JSON.parse(localStorage.getItem('ps_user') || 'null');
+if (!user) location.href = '../index.html';
+
+document.getElementById('profileName').textContent = user?.name || '–';
+document.getElementById('profileEmail').textContent = user?.email || '–';
+document.getElementById('statRides').textContent = user?.total_rides || 0;
+document.getElementById('statRating').textContent = (user?.rating || 5).toFixed(1);
+
+function logout() {
+  if (confirm('¿Cerrar sesión?')) {
+    localStorage.clear();
+    location.href = '../index.html';
+  }
+}
+function editProfile() {
+  showToast('Función disponible próximamente', 'info');
+}
+</script>
+</body>
+</html>

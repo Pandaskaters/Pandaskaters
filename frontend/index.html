@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PandaSkaters</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="manifest" href="manifest.json">
+<style>
+/* ── SPLASH ─────────────────────────────────────────────────── */
+#splash {
+  position: fixed; inset: 0;
+  background: var(--bg-primary);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 9999;
+  transition: opacity .6s ease, visibility .6s;
+}
+#splash.hidden { opacity: 0; visibility: hidden; }
+
+.splash-logo {
+  font-size: 3rem; font-weight: 900;
+  color: var(--accent);
+  letter-spacing: -.04em;
+  animation: float 3s ease-in-out infinite;
+  margin-bottom: .5rem;
+}
+.splash-logo span { color: var(--text-primary); }
+.splash-tagline {
+  color: var(--text-muted);
+  font-size: .85rem;
+  font-weight: 400;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 3rem;
+}
+.splash-loader {
+  width: 120px; height: 3px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.splash-loader-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  animation: loadBar 1.8s ease forwards;
+}
+@keyframes loadBar {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+/* ── AUTH SCREENS ───────────────────────────────────────────── */
+.auth-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  display: none;
+}
+.auth-page.active { display: flex; }
+
+.auth-hero {
+  position: relative;
+  height: 260px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0d1a00 0%, #0a0a0f 60%);
+}
+.auth-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(198,241,53,.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(198,241,53,.06) 0%, transparent 50%);
+}
+.auth-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(198,241,53,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(198,241,53,.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.auth-hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 1.5rem 1.5rem;
+}
+.auth-hero-logo {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: -.04em;
+  margin-bottom: .25rem;
+}
+.auth-hero-logo span { color: var(--text-primary); }
+.auth-hero-sub {
+  color: var(--text-secondary);
+  font-size: .85rem;
+  font-weight: 400;
+}
+
+/* City illustration */
+.city-silhouette {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 100px;
+  overflow: hidden;
+}
+.city-silhouette svg { width: 100%; height: 100%; }
+
+.auth-car {
+  position: absolute;
+  bottom: 24px;
+  animation: carDrive 8s linear infinite;
+  font-size: 1.8rem;
+  filter: drop-shadow(0 4px 12px rgba(198,241,53,.3));
+}
+@keyframes carDrive {
+  from { left: -60px; }
+  to   { left: calc(100% + 60px); }
+}
+
+.auth-body {
+  flex: 1;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  margin-top: -24px;
+  padding: 2rem 1.5rem 2rem;
+  position: relative;
+  z-index: 2;
+}
+.auth-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: .3rem;
+}
+.auth-subtitle {
+  color: var(--text-muted);
+  font-size: .85rem;
+  margin-bottom: 1.75rem;
+}
+
+/* Role selector */
+.role-tabs {
+  display: flex;
+  background: var(--bg-card);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+}
+.role-tab {
+  flex: 1;
+  padding: .55rem;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+.role-tab.active {
+  background: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-accent);
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: .85rem;
+  color: var(--text-muted);
+}
+.auth-switch a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 1.25rem 0;
+  color: var(--text-muted);
+  font-size: .8rem;
+}
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Password toggle */
+.pass-toggle {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: .25rem;
+  font-size: 1rem;
+  transition: var(--transition-fast);
+}
+.pass-toggle:hover { color: var(--text-primary); }
+
+/* Vehicle section in driver register */
+.section-title {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin: 1.25rem 0 .75rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-accent);
+}
+</style>
+</head>
+<body>
+
+<!-- ── SPLASH SCREEN ──────────────────────────────────────────── -->
+<div id="splash">
+  <div class="splash-logo">Panda<span>Skaters</span></div>
+  <div class="splash-tagline">Tu viaje, tu ritmo</div>
+  <div class="splash-loader">
+    <div class="splash-loader-bar"></div>
+  </div>
+</div>
+
+<!-- ── LOGIN PAGE ─────────────────────────────────────────────── -->
+<div id="loginPage" class="auth-page active" style="display:none">
+  <div class="auth-hero">
+    <div class="auth-hero-bg"></div>
+    <div class="auth-hero-grid"></div>
+    <div class="auth-hero-content">
+      <div class="auth-hero-logo">Panda<span>Skaters</span></div>
+      <div class="auth-hero-sub">Plataforma de transporte inteligente</div>
+    </div>
+    <div class="city-silhouette">
+      <svg viewBox="0 0 430 100" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10"  y="40" width="25" height="60" fill="rgba(198,241,53,.08)" rx="2"/>
+        <rect x="15"  y="30" width="15" height="15" fill="rgba(198,241,53,.05)" rx="1"/>
+        <rect x="50"  y="20" width="40" height="80" fill="rgba(198,241,53,.1)"  rx="2"/>
+        <rect x="58"  y="10" width="24" height="14" fill="rgba(198,241,53,.06)" rx="1"/>
+        <rect x="105" y="50" width="30" height="50" fill="rgba(198,241,53,.07)" rx="2"/>
+        <rect x="150" y="25" width="45" height="75" fill="rgba(198,241,53,.1)"  rx="2"/>
+        <rect x="160" y="15" width="25" height="14" fill="rgba(198,241,53,.06)" rx="1"/>
+        <rect x="210" y="45" width="20" height="55" fill="rgba(198,241,53,.06)" rx="2"/>
+        <rect x="245" y="30" width="35" height="70" fill="rgba(198,241,53,.09)" rx="2"/>
+        <rect x="295" y="55" width="28" height="45" fill="rgba(198,241,53,.07)" rx="2"/>
+        <rect x="340" y="20" width="50" height="80" fill="rgba(198,241,53,.1)"  rx="2"/>
+        <rect x="352" y="10" width="26" height="14" fill="rgba(198,241,53,.05)" rx="1"/>
+        <rect x="400" y="40" width="30" height="60" fill="rgba(198,241,53,.07)" rx="2"/>
+        <rect x="0"   y="95" width="430" height="5" fill="rgba(198,241,53,.06)"/>
+      </svg>
+    </div>
+    <div class="auth-car">🚗</div>
+  </div>
+
+  <div class="auth-body">
+    <h2 class="auth-title">Bienvenido</h2>
+    <p class="auth-subtitle">Inicia sesión en tu cuenta</p>
+
+    <form id="loginForm">
+      <div class="input-group">
+        <label>Correo electrónico</label>
+        <div class="input-wrap">
+          <i class="icon fa fa-envelope"></i>
+          <input type="email" id="loginEmail" placeholder="tu@correo.com" required autocomplete="email">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <div class="input-wrap" style="position:relative">
+          <i class="icon fa fa-lock"></i>
+          <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="pass-toggle" onclick="togglePass('loginPassword',this)">
+            <i class="fa fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginBtn">
+        <i class="fa fa-arrow-right"></i> Iniciar Sesión
+      </button>
+    </form>
+
+    <div class="auth-switch">
+      ¿No tienes cuenta? <a onclick="showPage('registerPage')">Regístrate</a>
+    </div>
+
+    <div class="or-divider">o accede como demo</div>
+
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="demoLogin('passenger')" style="flex:1">
+        <i class="fa fa-user"></i> Pasajero Demo
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="demoLogin('driver')" style="flex:1">
+        <i class="fa fa-car"></i> Conductor Demo
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="demoLogin('admin')" style="flex:1">
+        <i class="fa fa-shield"></i> Admin Demo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── REGISTER PAGE ──────────────────────────────────────────── -->
+<div id="registerPage" class="auth-page" style="display:none">
+  <div class="auth-hero" style="height:200px">
+    <div class="auth-hero-bg"></div>
+    <div class="auth-hero-grid"></div>
+    <div class="auth-hero-content" style="padding-top:2.5rem">
+      <button onclick="showPage('loginPage')" class="btn btn-icon" style="margin-bottom:.75rem">
+        <i class="fa fa-arrow-left"></i>
+      </button>
+      <div class="auth-hero-logo" style="font-size:1.6rem">Crear Cuenta</div>
+      <div class="auth-hero-sub">Únete a PandaSkaters</div>
+    </div>
+  </div>
+
+  <div class="auth-body">
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="switchRole('passenger',this)">
+        <i class="fa fa-user"></i> Pasajero
+      </button>
+      <button class="role-tab" onclick="switchRole('driver',this)">
+        <i class="fa fa-car"></i> Conductor
+      </button>
+    </div>
+
+    <form id="registerForm">
+      <!-- Common fields -->
+      <div class="input-group">
+        <label>Nombre completo</label>
+        <div class="input-wrap">
+          <i class="icon fa fa-user"></i>
+          <input type="text" id="regName" placeholder="Juan García" required>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Correo electrónico</label>
+        <div class="input-wrap">
+          <i class="icon fa fa-envelope"></i>
+          <input type="email" id="regEmail" placeholder="tu@correo.com" required>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Teléfono</label>
+        <div class="input-wrap">
+          <i class="icon fa fa-phone"></i>
+          <input type="tel" id="regPhone" placeholder="+1 555 000 0000" required>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <div class="input-wrap">
+          <i class="icon fa fa-lock"></i>
+          <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required>
+          <button type="button" class="pass-toggle" onclick="togglePass('regPassword',this)">
+            <i class="fa fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Driver extra fields -->
+      <div id="driverFields" style="display:none">
+        <div class="section-title"><i class="fa fa-id-card"></i> Información del Conductor</div>
+        <div class="input-group">
+          <label>Cédula / Documento</label>
+          <div class="input-wrap">
+            <i class="icon fa fa-id-badge"></i>
+            <input type="text" id="regCedula" placeholder="0000000000">
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Número de Licencia</label>
+          <div class="input-wrap">
+            <i class="icon fa fa-certificate"></i>
+            <input type="text" id="regLicense" placeholder="LIC-000000">
+          </div>
+        </div>
+
+        <div class="section-title"><i class="fa fa-car"></i> Datos del Vehículo</div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label>Marca</label>
+            <div class="input-wrap input-no-icon">
+              <input type="text" id="regBrand" placeholder="Toyota">
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Modelo</label>
+            <div class="input-wrap input-no-icon">
+              <input type="text" id="regModel" placeholder="Corolla">
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label>Año</label>
+            <div class="input-wrap input-no-icon">
+              <input type="number" id="regYear" placeholder="2020" min="2000" max="2030">
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Color</label>
+            <div class="input-wrap input-no-icon">
+              <input type="text" id="regColor" placeholder="Blanco">
+            </div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Placa</label>
+          <div class="input-wrap">
+            <i class="icon fa fa-hashtag"></i>
+            <input type="text" id="regPlate" placeholder="ABC-1234">
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Tipo de Vehículo</label>
+          <div class="input-wrap">
+            <i class="icon fa fa-tags"></i>
+            <select id="regVehicleType">
+              <option value="economy">Económico</option>
+              <option value="premium">Premium</option>
+              <option value="moto">MotoTaxi</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="registerBtn" style="margin-top:.5rem">
+        <i class="fa fa-check"></i> Crear Cuenta
+      </button>
+    </form>
+
+    <div class="auth-switch">
+      ¿Ya tienes cuenta? <a onclick="showPage('loginPage')">Inicia sesión</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST CONTAINER ────────────────────────────────────────── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+let currentRole = 'passenger';
+
+function showPage(id) {
+  document.querySelectorAll('.auth-page').forEach(p => p.style.display = 'none');
+  document.getElementById(id).style.display = 'flex';
+}
+
+function togglePass(id, btn) {
+  const input = document.getElementById(id);
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  btn.querySelector('i').className = isPass ? 'fa fa-eye-slash' : 'fa fa-eye';
+}
+
+function switchRole(role, btn) {
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('driverFields').style.display = role === 'driver' ? 'block' : 'none';
+}
+
+async function demoLogin(role) {
+  const demos = {
+    passenger: { email: 'passenger@demo.com', password: 'demo123' },
+    driver:    { email: 'driver@demo.com',    password: 'demo123' },
+    admin:     { email: 'admin@pandaskaters.com', password: 'admin123' },
+  };
+  const creds = demos[role];
+  document.getElementById('loginEmail').value = creds.email;
+  document.getElementById('loginPassword').value = creds.password;
+  await handleLogin();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await handleLogin();
+});
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await handleRegister(currentRole);
+});
+
+// ── Init: show splash then login ──────────────────────────── //
+window.addEventListener('load', () => {
+  // Check existing session
+  const token = localStorage.getItem('ps_token');
+  const user  = JSON.parse(localStorage.getItem('ps_user') || 'null');
+  if (token && user) {
+    redirectByRole(user.role);
+    return;
+  }
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hidden');
+    showPage('loginPage');
+  }, 2000);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<title>PandaSkaters – Historial</title>
+<link rel="stylesheet" href="../css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.ride-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: .75rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  color: inherit;
+}
+.ride-item:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.ride-icon {
+  width: 48px; height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.ride-icon.completed { background: rgba(34,197,94,.1); }
+.ride-icon.cancelled { background: rgba(239,68,68,.1); }
+.ride-details { flex: 1; min-width: 0; }
+.ride-route {
+  font-size: .82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ride-meta { font-size: .72rem; color: var(--text-muted); margin-top: .2rem; }
+.ride-fare { font-weight: 800; font-size: 1rem; color: var(--accent); flex-shrink: 0; }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  gap: 1rem;
+}
+.empty-state i { font-size: 4rem; color: var(--border); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-logo">Panda<span>Skaters</span></div>
+    <div style="font-size:.85rem;font-weight:600;color:var(--text-secondary)">Mis Viajes</div>
+  </header>
+
+  <!-- Content -->
+  <div class="page">
+    <div class="page-content">
+
+      <!-- Filter tabs -->
+      <div class="role-tabs" style="margin-bottom:1.25rem">
+        <button class="role-tab active" onclick="filterRides('all',this)">Todos</button>
+        <button class="role-tab" onclick="filterRides('completed',this)">Completados</button>
+        <button class="role-tab" onclick="filterRides('cancelled',this)">Cancelados</button>
+      </div>
+
+      <!-- Rides list -->
+      <div id="ridesList">
+        <div class="empty-state">
+          <div class="spinner"></div>
+          <p>Cargando historial...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a class="nav-item" href="home.html">
+      <i class="fa fa-house"></i><span>Inicio</span>
+    </a>
+    <a class="nav-item active" href="history.html">
+      <i class="fa fa-clock-rotate-left"></i><span>Historial</span>
+    </a>
+    <a class="nav-item" href="profile.html">
+      <i class="fa fa-user-circle"></i><span>Perfil</span>
+    </a>
+  </nav>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="../js/api.js"></script>
+<script>
+const serviceIcon = { economy:'🚗', premium:'🚙', moto:'🏍️' };
+const statusLabel = {
+  completed:'Completado', cancelled:'Cancelado',
+  searching:'Buscando', assigned:'Asignado', in_progress:'En curso'
+};
+
+let allRides = [];
+
+async function loadHistory() {
+  try {
+    const rides = await api.get('/rides/history');
+    allRides = rides;
+    renderRides(rides);
+  } catch(e) {
+    document.getElementById('ridesList').innerHTML = `
+      <div class="empty-state">
+        <i class="fa fa-triangle-exclamation"></i>
+        <p>Error cargando historial</p>
+      </div>`;
+  }
+}
+
+function renderRides(rides) {
+  const el = document.getElementById('ridesList');
+  if (!rides.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <i class="fa fa-route"></i>
+        <h3>Sin viajes aún</h3>
+        <p>Tus viajes aparecerán aquí</p>
+      </div>`;
+    return;
+  }
+  el.innerHTML = rides.map(r => {
+    const done = r.status === 'completed';
+    const date = new Date(r.requested_at).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' });
+    const fare = r.final_fare || r.estimated_fare || 0;
+    return `
+      <div class="ride-item">
+        <div class="ride-icon ${r.status}">${serviceIcon[r.service_type] || '🚗'}</div>
+        <div class="ride-details">
+          <div class="ride-route">${r.origin_address} → ${r.destination_address}</div>
+          <div class="ride-meta">
+            <span class="badge badge-${r.status === 'completed' ? 'completed' : r.status === 'cancelled' ? 'cancelled' : 'searching'}">
+              ${statusLabel[r.status] || r.status}
+            </span>
+            &nbsp;${date}
+          </div>
+        </div>
+        <div class="ride-fare">$${fare.toFixed(2)}</div>
+      </div>`;
+  }).join('');
+}
+
+function filterRides(status, btn) {
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (status === 'all') renderRides(allRides);
+  else renderRides(allRides.filter(r => r.status === status));
+}
+
+// Guard
+const user = JSON.parse(localStorage.getItem('ps_user') || 'null');
+if (!user) location.href = '../index.html';
+loadHistory();
+</script>
+</body>
+</html>

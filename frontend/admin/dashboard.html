@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<title>PandaSkaters – Admin</title>
+<link rel="stylesheet" href="../css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 280px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  z-index: 600;
+  transform: translateX(-100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar.open { transform: translateX(0); }
+.sidebar-header {
+  padding: 2rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo { font-size: 1.3rem; font-weight: 900; color: var(--accent); }
+.sidebar-logo span { color: var(--text-primary); }
+.sidebar-role { font-size: .72rem; color: var(--text-muted); margin-top: .2rem; }
+.sidebar-nav { padding: 1rem 0; flex: 1; }
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .85rem 1.5rem;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: .88rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-left: 3px solid transparent;
+  text-decoration: none;
+}
+.sidebar-item:hover { color: var(--text-primary); background: var(--accent-subtle); }
+.sidebar-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); }
+.sidebar-item i { width: 20px; text-align: center; font-size: 1rem; }
+.sidebar-section {
+  font-size: .6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  padding: .5rem 1.5rem .25rem;
+}
+.sidebar-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── ADMIN HEADER ────────────────────────────────────────── */
+.admin-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: rgba(10,10,15,.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 1rem;
+  z-index: 200;
+}
+.admin-logo { font-size: 1rem; font-weight: 800; color: var(--accent); flex: 1; }
+.admin-logo span { color: var(--text-primary); }
+.admin-badge {
+  font-size: .65rem;
+  background: var(--accent);
+  color: var(--text-inverse);
+  padding: .2rem .5rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+}
+
+/* ── MAIN CONTENT ────────────────────────────────────────── */
+.admin-main {
+  padding-top: var(--header-h);
+  min-height: 100dvh;
+  overflow-y: auto;
+}
+.admin-content {
+  padding: 1.25rem;
+}
+
+/* ── STAT GRID ───────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── TABLE ───────────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-table th, .admin-table td {
+  padding: .75rem .85rem;
+  text-align: left;
+  font-size: .78rem;
+}
+.admin-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--border);
+}
+.admin-table td { border-bottom: 1px solid rgba(255,255,255,.04); }
+.admin-table tr:hover td { background: var(--accent-subtle); }
+.table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+/* ── SECTION HEADER ──────────────────────────────────────── */
+.section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .85rem;
+}
+.section-hdr h3 { font-size: 1rem; }
+
+/* ── ACTION BUTTONS ──────────────────────────────────────── */
+.action-btns { display: flex; gap: .35rem; }
+.tbl-btn {
+  padding: .3rem .6rem;
+  border-radius: var(--radius-sm);
+  font-size: .68rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.tbl-approve { background: rgba(34,197,94,.15); color: var(--success); }
+.tbl-approve:hover { background: rgba(34,197,94,.3); }
+.tbl-reject  { background: rgba(239,68,68,.12);  color: var(--danger); }
+.tbl-reject:hover  { background: rgba(239,68,68,.25); }
+.tbl-block   { background: rgba(245,158,11,.12); color: var(--warning); }
+.tbl-block:hover   { background: rgba(245,158,11,.25); }
+
+/* ── LIVE DOT ────────────────────────────────────────────── */
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .7rem;
+  color: var(--success);
+  font-weight: 600;
+}
+.live-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulseLive 1.5s ease infinite;
+}
+@keyframes pulseLive {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(.7); }
+}
+
+/* ── TABS ────────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+.admin-tab {
+  flex: 1;
+  padding: .65rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border-right: 1px solid var(--border);
+}
+.admin-tab:last-child { border-right: none; }
+.admin-tab.active { background: var(--accent); color: var(--text-inverse); }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ────────────────────────────────────────────────── -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Panda<span>Skaters</span></div>
+    <div class="sidebar-role">Panel Administrativo</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">Principal</div>
+    <a class="sidebar-item active" onclick="showSection('dashboard', this)">
+      <i class="fa fa-chart-line"></i> Dashboard
+    </a>
+    <a class="sidebar-item" onclick="showSection('rides', this)">
+      <i class="fa fa-route"></i> Viajes Activos
+    </a>
+    <div class="sidebar-section">Gestión</div>
+    <a class="sidebar-item" onclick="showSection('drivers', this)">
+      <i class="fa fa-car"></i> Conductores
+    </a>
+    <a class="sidebar-item" onclick="showSection('users', this)">
+      <i class="fa fa-users"></i> Usuarios
+    </a>
+    <a class="sidebar-item" onclick="showSection('settings', this)">
+      <i class="fa fa-gear"></i> Configuración
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="font-size:.78rem;font-weight:600;margin-bottom:.3rem" id="adminName">Admin</div>
+    <div style="font-size:.7rem;color:var(--text-muted)" id="adminEmail">–</div>
+    <button class="btn btn-ghost btn-sm btn-full" style="margin-top:.75rem" onclick="logout()">
+      <i class="fa fa-right-from-bracket"></i> Salir
+    </button>
+  </div>
+</div>
+
+<!-- ── OVERLAY ────────────────────────────────────────────────── -->
+<div class="overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ── ADMIN HEADER ───────────────────────────────────────────── -->
+<header class="admin-header">
+  <button class="btn btn-icon" onclick="toggleSidebar()">
+    <i class="fa fa-bars"></i>
+  </button>
+  <div class="admin-logo">Panda<span>Skaters</span> <span class="admin-badge">ADMIN</span></div>
+  <div class="live-indicator">
+    <div class="live-dot"></div> EN VIVO
+  </div>
+</header>
+
+<!-- ── MAIN ───────────────────────────────────────────────────── -->
+<main class="admin-main">
+  <div class="admin-content">
+
+    <!-- ── DASHBOARD SECTION ──────────────────────────────────── -->
+    <div id="sec-dashboard">
+      <div style="margin-bottom:1.25rem">
+        <h2>Dashboard</h2>
+        <p style="font-size:.82rem;color:var(--text-muted)">Vista general del sistema en tiempo real</p>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card slide-up">
+          <div class="stat-icon"><i class="fa fa-route"></i></div>
+          <div class="stat-value" id="statActive">–</div>
+          <div class="stat-label">Viajes Activos</div>
+        </div>
+        <div class="stat-card slide-up" style="animation-delay:.1s">
+          <div class="stat-icon"><i class="fa fa-car"></i></div>
+          <div class="stat-value" id="statOnline">–</div>
+          <div class="stat-label">Conductores Online</div>
+        </div>
+        <div class="stat-card slide-up" style="animation-delay:.2s">
+          <div class="stat-icon"><i class="fa fa-users"></i></div>
+          <div class="stat-value" id="statUsers">–</div>
+          <div class="stat-label">Usuarios Registrados</div>
+        </div>
+        <div class="stat-card slide-up" style="animation-delay:.3s">
+          <div class="stat-icon"><i class="fa fa-dollar-sign"></i></div>
+          <div class="stat-value" id="statEarnings">–</div>
+          <div class="stat-label">Ingresos Totales</div>
+        </div>
+      </div>
+
+      <!-- Quick recent rides -->
+      <div class="section-hdr">
+        <h3>Viajes Recientes</h3>
+        <span class="live-indicator"><div class="live-dot"></div>Auto-refresh</span>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Origen → Destino</th>
+              <th>Servicio</th>
+              <th>Estado</th>
+              <th>Tarifa</th>
+            </tr>
+          </thead>
+          <tbody id="recentRidesBody">
+            <tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--text-muted)">
+              <div class="spinner" style="margin:0 auto"></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── RIDES SECTION ──────────────────────────────────────── -->
+    <div id="sec-rides" style="display:none">
+      <div style="margin-bottom:1.25rem">
+        <h2>Viajes</h2>
+        <p style="font-size:.82rem;color:var(--text-muted)">Gestión de todos los viajes</p>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="filterAdminRides('',this)">Todos</button>
+        <button class="admin-tab" onclick="filterAdminRides('searching',this)">Buscando</button>
+        <button class="admin-tab" onclick="filterAdminRides('in_progress',this)">En curso</button>
+        <button class="admin-tab" onclick="filterAdminRides('completed',this)">Completados</button>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>#</th><th>Ruta</th><th>Tipo</th><th>Estado</th><th>Tarifa</th><th>Fecha</th></tr>
+          </thead>
+          <tbody id="allRidesBody">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── DRIVERS SECTION ────────────────────────────────────── -->
+    <div id="sec-drivers" style="display:none">
+      <div style="margin-bottom:1.25rem">
+        <h2>Conductores</h2>
+        <p style="font-size:.82rem;color:var(--text-muted)">Aprobación y gestión de conductores</p>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>#</th><th>Conductor</th><th>Vehículo</th><th>Estado</th><th>Rating</th><th>Viajes</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="driversBody">
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── USERS SECTION ──────────────────────────────────────── -->
+    <div id="sec-users" style="display:none">
+      <div style="margin-bottom:1.25rem">
+        <h2>Usuarios</h2>
+        <p style="font-size:.82rem;color:var(--text-muted)">Gestión de pasajeros registrados</p>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>#</th><th>Usuario</th><th>Email</th><th>Viajes</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS SECTION ───────────────────────────────────── -->
+    <div id="sec-settings" style="display:none">
+      <div style="margin-bottom:1.25rem">
+        <h2>Configuración de Tarifas</h2>
+        <p style="font-size:.82rem;color:var(--text-muted)">Ajusta los precios del sistema</p>
+      </div>
+      <div class="card card-accent" style="margin-bottom:1rem">
+        <h4 style="margin-bottom:1rem;color:var(--accent)"><i class="fa fa-car"></i> Económico</h4>
+        <div class="grid-2">
+          <div class="input-group">
+            <label>Tarifa Base ($)</label>
+            <div class="input-wrap input-no-icon"><input type="number" id="baseEco" value="3.00" step="0.10"></div>
+          </div>
+          <div class="input-group">
+            <label>Precio/km ($)</label>
+            <div class="input-wrap input-no-icon"><input type="number" id="kmEco" value="0.80" step="0.05"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-accent" style="margin-bottom:1rem">
+        <h4 style="margin-bottom:1rem;color:var(--accent)"><i class="fa fa-car-side"></i> Premium</h4>
+        <div class="grid-2">
+          <div class="input-group">
+            <label>Tarifa Base ($)</label>
+            <div class="input-wrap input-no-icon"><input type="number" id="basePrem" value="5.00" step="0.10"></div>
+          </div>
+          <div class="input-group">
+            <label>Precio/km ($)</label>
+            <div class="input-wrap input-no-icon"><input type="number" id="kmPrem" value="1.50" step="0.05"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-accent" style="margin-bottom:1.5rem">
+        <h4 style="margin-bottom:1rem;color:var(--accent)"><i class="fa fa-motorcycle"></i> MotoTaxi</h4>
+        <div class="grid-2">
+          <div class="input-group">
+            <label>Tarifa Base ($)</label>
+            <div class="input-wrap input-no-icon"><input type="number" id="baseMoto" value="2.00" step="0.10"></div>
+          </div>
+          <div class="input-group">
+            <label>Precio/km ($)</label>
+            <div class="input-wrap input-no-icon"><input type="number" id="kmMoto" value="0.50" step="0.05"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveFares()">
+        <i class="fa fa-floppy-disk"></i> Guardar Configuración
+      </button>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="../js/api.js"></script>
+<script>
+// Guard
+const user = JSON.parse(localStorage.getItem('ps_user')||'null');
+if (!user || user.role !== 'admin') location.href = '../index.html';
+document.getElementById('adminName').textContent = user?.name || 'Admin';
+document.getElementById('adminEmail').textContent = user?.email || '–';
+
+let allRidesData = [];
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('visible');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+}
+
+function showSection(sec, el) {
+  document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
+  document.getElementById('sec-' + sec).style.display = 'block';
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  closeSidebar();
+  if (sec === 'drivers') loadDrivers();
+  if (sec === 'users')   loadUsers();
+  if (sec === 'rides')   loadAllRides();
+}
+
+async function loadStats() {
+  try {
+    const s = await api.get('/admin/stats');
+    document.getElementById('statActive').textContent   = s.active_rides;
+    document.getElementById('statOnline').textContent   = s.drivers_online;
+    document.getElementById('statUsers').textContent    = s.total_users;
+    document.getElementById('statEarnings').textContent = `$${s.total_earnings.toFixed(0)}`;
+  } catch(e) {}
+}
+
+async function loadRecentRides() {
+  try {
+    const rides = await api.get('/admin/rides?limit=10');
+    const stMap = {searching:'badge-searching',assigned:'badge-assigned',in_progress:'badge-progress',completed:'badge-completed',cancelled:'badge-cancelled'};
+    const stLabel = {searching:'Buscando',assigned:'Asignado',driver_arriving:'En camino',in_progress:'En curso',completed:'Completado',cancelled:'Cancelado'};
+    const typeLabel = {economy:'Económico',premium:'Premium',moto:'MotoTaxi'};
+    document.getElementById('recentRidesBody').innerHTML = rides.map(r => `
+      <tr>
+        <td style="color:var(--text-muted)">#${r.id}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${r.origin_address.substring(0,20)}... → ${r.destination_address.substring(0,15)}...
+        </td>
+        <td>${typeLabel[r.service_type]||r.service_type}</td>
+        <td><span class="badge ${stMap[r.status]||'badge-searching'}">${stLabel[r.status]||r.status}</span></td>
+        <td style="color:var(--accent);font-weight:700">$${(r.final_fare||r.estimated_fare||0).toFixed(2)}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+async function loadAllRides(status='') {
+  allRidesData = await api.get(`/admin/rides?limit=100${status?'&status='+status:''}`).catch(()=>[]);
+  renderAllRides(allRidesData);
+}
+
+function renderAllRides(rides) {
+  const stLabel = {searching:'Buscando',assigned:'Asignado',driver_arriving:'En camino',in_progress:'En curso',completed:'Completado',cancelled:'Cancelado'};
+  const stBadge = {searching:'badge-searching',assigned:'badge-assigned',driver_arriving:'badge-assigned',in_progress:'badge-progress',completed:'badge-completed',cancelled:'badge-cancelled'};
+  const typeLabel = {economy:'🚗 Eco',premium:'🚙 Premium',moto:'🏍️ Moto'};
+  document.getElementById('allRidesBody').innerHTML = rides.map(r => `
+    <tr>
+      <td style="color:var(--text-muted)">#${r.id}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.75rem">
+        ${r.origin_address.substring(0,15)}... → ${r.destination_address.substring(0,12)}...
+      </td>
+      <td>${typeLabel[r.service_type]||r.service_type}</td>
+      <td><span class="badge ${stBadge[r.status]||'badge-searching'}">${stLabel[r.status]||r.status}</span></td>
+      <td style="color:var(--accent);font-weight:700">$${(r.final_fare||r.estimated_fare||0).toFixed(2)}</td>
+      <td style="color:var(--text-muted);font-size:.7rem">${new Date(r.requested_at).toLocaleDateString('es')}</td>
+    </tr>`).join('');
+}
+
+function filterAdminRides(status, btn) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  loadAllRides(status);
+}
+
+async function loadDrivers() {
+  try {
+    const drivers = await api.get('/admin/drivers');
+    const stMap = {pending:'badge-searching',approved:'badge-completed',rejected:'badge-cancelled',suspended:'badge-cancelled'};
+    const stLabel = {pending:'Pendiente',approved:'Aprobado',rejected:'Rechazado',suspended:'Suspendido'};
+    const typeIcon = {economy:'🚗',premium:'🚙',moto:'🏍️'};
+    document.getElementById('driversBody').innerHTML = drivers.map(d => `
+      <tr>
+        <td style="color:var(--text-muted)">#${d.id}</td>
+        <td style="font-weight:600">Conductor #${d.user_id}</td>
+        <td>${d.vehicle ? `${typeIcon[d.vehicle.vehicle_type]||'🚗'} ${d.vehicle.plate}` : '–'}</td>
+        <td><span class="badge ${stMap[d.status]}">${stLabel[d.status]}</span></td>
+        <td style="color:var(--warning)">⭐ ${d.rating.toFixed(1)}</td>
+        <td>${d.total_rides}</td>
+        <td>
+          <div class="action-btns">
+            ${d.status !== 'approved' ? `<button class="tbl-btn tbl-approve" onclick="approveDriver(${d.id})">✓ Aprobar</button>` : ''}
+            ${d.status !== 'rejected' ? `<button class="tbl-btn tbl-reject" onclick="rejectDriver(${d.id})">✗ Rechazar</button>` : ''}
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+async function loadUsers() {
+  try {
+    const users = await api.get('/admin/users');
+    document.getElementById('usersBody').innerHTML = users.map(u => `
+      <tr>
+        <td style="color:var(--text-muted)">#${u.id}</td>
+        <td style="font-weight:600">${u.name}</td>
+        <td style="color:var(--text-muted);font-size:.75rem">${u.email}</td>
+        <td>${u.total_rides}</td>
+        <td><span class="badge ${u.is_active ? 'badge-completed' : 'badge-cancelled'}">${u.is_active ? 'Activo' : 'Bloqueado'}</span></td>
+        <td>
+          <button class="tbl-btn tbl-block" onclick="toggleUser(${u.id})">
+            ${u.is_active ? 'Bloquear' : 'Activar'}
+          </button>
+        </td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+async function approveDriver(id) {
+  await api.patch(`/admin/drivers/${id}/approve`).catch(()=>{});
+  showToast('Conductor aprobado', 'success');
+  loadDrivers();
+}
+async function rejectDriver(id) {
+  await api.patch(`/admin/drivers/${id}/reject`).catch(()=>{});
+  showToast('Conductor rechazado', 'info');
+  loadDrivers();
+}
+async function toggleUser(id) {
+  await api.patch(`/admin/users/${id}/toggle`).catch(()=>{});
+  showToast('Usuario actualizado', 'success');
+  loadUsers();
+}
+function saveFares() {
+  showToast('Configuración guardada (requiere reinicio del servidor)', 'info');
+}
+function logout() {
+  if (confirm('¿Cerrar sesión?')) { localStorage.clear(); location.href = '../index.html'; }
+}
+
+// Init
+loadStats();
+loadRecentRides();
+setInterval(() => { loadStats(); loadRecentRides(); }, 15000);
+</script>
+</body>
+</html>

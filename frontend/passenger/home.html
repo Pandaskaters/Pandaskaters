@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<title>PandaSkaters – Inicio</title>
+<link rel="stylesheet" href="../css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ── MAP FULL SCREEN ───────────────────────────────────── */
+.map-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+#map { width: 100%; height: 100%; }
+
+/* ── TOP BAR ──────────────────────────────────────────── */
+.top-bar {
+  position: fixed;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  padding: calc(env(safe-area-inset-top) + .75rem) 1rem .75rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex: 1;
+  background: rgba(17,17,24,.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: .6rem 1rem;
+}
+.greeting { font-size: .85rem; font-weight: 600; }
+.greeting small { display: block; font-size: .7rem; color: var(--text-muted); font-weight: 400; }
+.top-bar-actions { display: flex; gap: .5rem; }
+
+/* ── SEARCH PANEL (bottom slide-up) ───────────────────── */
+.search-panel {
+  position: fixed;
+  bottom: var(--nav-h);
+  left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  z-index: 200;
+  padding: 0 .75rem .75rem;
+}
+.search-card {
+  background: rgba(17,17,24,.96);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1rem;
+  box-shadow: var(--shadow-lg);
+}
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.search-input-wrap:hover { border-color: var(--accent); }
+.search-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-origin { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.dot-dest   { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+.search-divider-line {
+  width: 2px; height: 24px;
+  background: var(--border);
+  margin: .25rem 0 .25rem 1.15rem;
+  border-radius: var(--radius-full);
+}
+
+/* ── RIDE REQUEST SHEET ───────────────────────────────── */
+#rideSheet {
+  padding-bottom: calc(var(--nav-h) + 1.25rem);
+}
+.route-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+.route-info-item { text-align: center; }
+.route-info-value { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+.route-info-label { font-size: .65rem; color: var(--text-muted); }
+.route-info-sep { width: 1px; height: 40px; background: var(--border); }
+
+.service-grid {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  margin-bottom: 1rem;
+}
+
+/* ── ACTIVE RIDE SHEET ─────────────────────────────────── */
+#activeRideSheet { display: none; }
+.driver-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+.driver-info { flex: 1; }
+.driver-name { font-weight: 700; font-size: 1rem; }
+.driver-sub  { font-size: .75rem; color: var(--text-muted); }
+.driver-actions { display: flex; gap: .5rem; }
+
+/* ── MAP CONTROLS ─────────────────────────────────────── */
+.map-controls {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--nav-h) + 240px);
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  z-index: 100;
+}
+.map-btn {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-full);
+  background: rgba(17,17,24,.92);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: var(--transition);
+}
+.map-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── NEARBY DRIVER MARKER ─────────────────────────────── */
+.driver-marker {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(198,241,53,.15);
+  border: 2px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 12px rgba(198,241,53,.3);
+  transition: transform .3s ease;
+}
+
+/* ── LOCATION PICKER MODAL ─────────────────────────────── */
+#locationModal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: none;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+#locationModal.open { display: flex; }
+.location-modal-header {
+  padding: calc(env(safe-area-inset-top) + .75rem) 1rem .75rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.location-search-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: .7rem 1rem;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: .9rem;
+  outline: none;
+}
+.location-search-input:focus { border-color: var(--accent); }
+.location-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .85rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  margin-bottom: .4rem;
+}
+.location-item:hover { background: var(--bg-elevated); border-color: var(--border); }
+.location-item-icon {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.location-item-text { flex: 1; }
+.location-item-name  { font-weight: 600; font-size: .9rem; }
+.location-item-addr  { font-size: .75rem; color: var(--text-muted); margin-top: .15rem; }
+.use-map-btn {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: 1rem;
+  background: var(--accent-subtle);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: .9rem;
+  margin-bottom: 1rem;
+  transition: var(--transition);
+}
+.use-map-btn:hover { background: var(--accent-glow); }
+</style>
+</head>
+<body>
+
+<!-- ── MAP ──────────────────────────────────────────────────── -->
+<div class="map-wrapper">
+  <div id="map"></div>
+</div>
+
+<!-- ── TOP BAR ──────────────────────────────────────────────── -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="avatar avatar-sm" id="userAvatar">
+      <i class="fa fa-user"></i>
+    </div>
+    <div class="greeting">
+      <span id="greetingText">Hola!</span>
+      <small id="greetingName">Cargando...</small>
+    </div>
+  </div>
+  <div class="top-bar-actions">
+    <button class="map-btn" onclick="centerMap()" title="Mi ubicación">
+      <i class="fa fa-location-crosshairs"></i>
+    </button>
+    <button class="map-btn" onclick="location.href='../index.html'" title="Menú">
+      <i class="fa fa-bars"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ── MAP CONTROLS ─────────────────────────────────────────── -->
+<div class="map-controls">
+  <button class="map-btn" onclick="map.zoomIn()"><i class="fa fa-plus"></i></button>
+  <button class="map-btn" onclick="map.zoomOut()"><i class="fa fa-minus"></i></button>
+</div>
+
+<!-- ── SEARCH PANEL ──────────────────────────────────────────── -->
+<div class="search-panel" id="searchPanel">
+  <div class="search-card">
+    <div style="margin-bottom:.65rem">
+      <div class="search-input-wrap" onclick="openLocationModal('origin')">
+        <span class="search-dot dot-origin"></span>
+        <span id="originLabel" style="flex:1;font-size:.85rem;color:var(--text-secondary)">
+          Tu ubicación actual
+        </span>
+        <i class="fa fa-circle-dot" style="color:var(--accent);font-size:.8rem"></i>
+      </div>
+      <div class="search-divider-line"></div>
+      <div class="search-input-wrap" onclick="openLocationModal('destination')">
+        <span class="search-dot dot-dest"></span>
+        <span id="destLabel" style="flex:1;font-size:.85rem;color:var(--text-muted)">
+          ¿A dónde vas?
+        </span>
+        <i class="fa fa-chevron-right" style="color:var(--text-muted);font-size:.8rem"></i>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="showRideSheet()" id="requestBtn" disabled>
+      <i class="fa fa-magnifying-glass"></i> Buscar Viaje
+    </button>
+  </div>
+</div>
+
+<!-- ── RIDE REQUEST SHEET ────────────────────────────────────── -->
+<div class="bottom-sheet" id="rideSheet">
+  <div class="bottom-sheet-handle"></div>
+  <h3 style="margin-bottom:.75rem">Elige tu servicio</h3>
+
+  <div class="route-info" id="routeInfo">
+    <div class="route-info-item">
+      <div class="route-info-value" id="routeDist">–</div>
+      <div class="route-info-label">Distancia</div>
+    </div>
+    <div class="route-info-sep"></div>
+    <div class="route-info-item">
+      <div class="route-info-value" id="routeTime">–</div>
+      <div class="route-info-label">Tiempo est.</div>
+    </div>
+    <div class="route-info-sep"></div>
+    <div class="route-info-item">
+      <div class="route-info-value" id="routeFare">–</div>
+      <div class="route-info-label">Precio base</div>
+    </div>
+  </div>
+
+  <div class="service-grid" id="serviceGrid">
+    <div class="service-card selected" data-type="economy" onclick="selectService(this,'economy')">
+      <div class="service-icon">🚗</div>
+      <div style="flex:1">
+        <div style="font-weight:700">Económico</div>
+        <div style="font-size:.75rem;color:var(--text-muted)">Rápido y asequible</div>
+      </div>
+      <div style="text-align:right">
+        <div id="fare_economy" style="font-weight:800;color:var(--accent)">$–</div>
+        <div style="font-size:.65rem;color:var(--text-muted)" id="eta_economy">– min</div>
+      </div>
+    </div>
+    <div class="service-card" data-type="premium" onclick="selectService(this,'premium')">
+      <div class="service-icon">🚙</div>
+      <div style="flex:1">
+        <div style="font-weight:700">Premium</div>
+        <div style="font-size:.75rem;color:var(--text-muted)">Confort máximo</div>
+      </div>
+      <div style="text-align:right">
+        <div id="fare_premium" style="font-weight:800;color:var(--accent)">$–</div>
+        <div style="font-size:.65rem;color:var(--text-muted)" id="eta_premium">– min</div>
+      </div>
+    </div>
+    <div class="service-card" data-type="moto" onclick="selectService(this,'moto')">
+      <div class="service-icon">🏍️</div>
+      <div style="flex:1">
+        <div style="font-weight:700">MotoTaxi</div>
+        <div style="font-size:.75rem;color:var(--text-muted)">Ultra rápido</div>
+      </div>
+      <div style="text-align:right">
+        <div id="fare_moto" style="font-weight:800;color:var(--accent)">$–</div>
+        <div style="font-size:.65rem;color:var(--text-muted)" id="eta_moto">– min</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:.75rem">
+    <button class="btn btn-ghost" onclick="closeSheet('rideSheet')" style="flex:1">
+      Cancelar
+    </button>
+    <button class="btn btn-primary" onclick="confirmRide()" style="flex:2" id="confirmBtn">
+      <i class="fa fa-check"></i> Confirmar Viaje
+    </button>
+  </div>
+</div>
+
+<!-- ── ACTIVE RIDE SHEET ──────────────────────────────────────── -->
+<div class="bottom-sheet" id="activeRideSheet">
+  <div class="bottom-sheet-handle"></div>
+
+  <div class="status-steps" id="rideStatusSteps">
+    <div class="status-step" id="step_searching">
+      <div class="step-dot"><i class="fa fa-search" style="font-size:.55rem"></i></div>
+      <div class="step-label">Buscando</div>
+    </div>
+    <div class="status-step" id="step_assigned">
+      <div class="step-dot"><i class="fa fa-user" style="font-size:.55rem"></i></div>
+      <div class="step-label">Asignado</div>
+    </div>
+    <div class="status-step" id="step_arriving">
+      <div class="step-dot"><i class="fa fa-car" style="font-size:.55rem"></i></div>
+      <div class="step-label">En camino</div>
+    </div>
+    <div class="status-step" id="step_progress">
+      <div class="step-dot"><i class="fa fa-road" style="font-size:.55rem"></i></div>
+      <div class="step-label">Viaje</div>
+    </div>
+    <div class="status-step" id="step_done">
+      <div class="step-dot"><i class="fa fa-flag" style="font-size:.55rem"></i></div>
+      <div class="step-label">Listo</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div id="searchingState">
+    <div style="text-align:center;padding:1.5rem 0">
+      <div class="spinner spinner-lg" style="margin:0 auto .75rem"></div>
+      <div style="font-weight:700;margin-bottom:.25rem">Buscando conductor...</div>
+      <div style="font-size:.8rem;color:var(--text-muted)">Esto puede tomar unos segundos</div>
+    </div>
+  </div>
+
+  <div id="driverAssigned" style="display:none">
+    <div class="driver-card">
+      <div class="avatar avatar-md" id="activeDriverAvatar"><i class="fa fa-user"></i></div>
+      <div class="driver-info">
+        <div class="driver-name" id="activeDriverName">–</div>
+        <div class="driver-sub" id="activeDriverVehicle">–</div>
+        <div style="display:flex;align-items:center;gap:.25rem;margin-top:.25rem">
+          <i class="fa fa-star" style="color:var(--warning);font-size:.7rem"></i>
+          <span id="activeDriverRating" style="font-size:.75rem;font-weight:600">5.0</span>
+        </div>
+      </div>
+      <div class="driver-actions">
+        <button class="btn btn-icon" title="Llamar" onclick="callDriver()">
+          <i class="fa fa-phone"></i>
+        </button>
+        <button class="btn btn-icon" title="Mensaje" onclick="openChat()">
+          <i class="fa fa-comment"></i>
+        </button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+      <div style="font-size:.8rem;color:var(--text-muted)">Tiempo de llegada</div>
+      <div style="font-weight:700;color:var(--accent)" id="etaDisplay">~ 5 min</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:.75rem;margin-top:.75rem">
+    <button class="btn btn-danger" onclick="cancelRide()" style="flex:1">
+      <i class="fa fa-xmark"></i> Cancelar
+    </button>
+    <button class="btn btn-secondary" onclick="openChat()" style="flex:1">
+      <i class="fa fa-comment"></i> Chat
+    </button>
+  </div>
+</div>
+
+<!-- ── LOCATION PICKER MODAL ──────────────────────────────────── -->
+<div id="locationModal">
+  <div class="location-modal-header">
+    <button class="btn btn-icon" onclick="closeLocationModal()">
+      <i class="fa fa-arrow-left"></i>
+    </button>
+    <input class="location-search-input" type="text"
+      id="locationSearchInput"
+      placeholder="Buscar dirección..."
+      oninput="searchLocations(this.value)">
+  </div>
+  <div class="location-results">
+    <div class="use-map-btn" onclick="useMapSelection()">
+      <i class="fa fa-map-pin" style="font-size:1.2rem"></i>
+      <span>Seleccionar en el mapa</span>
+    </div>
+    <div id="locationItems"></div>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ────────────────────────────────────────────── -->
+<nav class="bottom-nav">
+  <a class="nav-item active" href="home.html">
+    <i class="fa fa-house"></i><span>Inicio</span>
+  </a>
+  <a class="nav-item" href="history.html">
+    <i class="fa fa-clock-rotate-left"></i><span>Historial</span>
+  </a>
+  <a class="nav-item" href="profile.html">
+    <i class="fa fa-user-circle"></i><span>Perfil</span>
+  </a>
+</nav>
+
+<!-- ── TOAST ─────────────────────────────────────────────────── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/map.js"></script>
+<script src="../js/passenger.js"></script>
+</body>
+</html>

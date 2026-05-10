@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a0a0f">
+<title>PandaSkaters – Conductor</title>
+<link rel="stylesheet" href="../css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.map-wrapper { position:fixed; inset:0; z-index:1; }
+#map { width:100%; height:100%; }
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 56px; height: 30px;
+  flex-shrink: 0;
+}
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  transition: var(--transition);
+  cursor: pointer;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  left: 3px; top: 50%;
+  transform: translateY(-50%);
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: var(--transition);
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(26px) translateY(-50%);
+  background: var(--text-inverse);
+}
+
+/* Top bar */
+.driver-top-bar {
+  position: fixed;
+  top: 0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px;
+  z-index:100;
+  padding: calc(env(safe-area-inset-top) + .75rem) 1rem .75rem;
+  display: flex; gap:.75rem; align-items:center;
+}
+.driver-status-bar {
+  flex: 1;
+  background: rgba(17,17,24,.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: .7rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.online-label { font-size:.82rem; font-weight:600; }
+.online-label small { display:block; font-size:.68rem; color:var(--text-muted); font-weight:400; }
+
+/* Earnings bar */
+.earnings-bar {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 72px);
+  left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px;
+  z-index:99;
+  padding: 0 1rem;
+}
+.earnings-card {
+  background: rgba(17,17,24,.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: .75rem 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.earn-stat { flex:1; text-align:center; }
+.earn-val { font-size:1.1rem; font-weight:800; color:var(--accent); }
+.earn-lab { font-size:.62rem; color:var(--text-muted); }
+.earn-sep { width:1px; height:32px; background:var(--border); }
+
+/* Ride request popup */
+.ride-request-popup {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 1rem);
+  left:50%; transform:translateX(-50%) translateY(120%);
+  width: calc(100% - 2rem);
+  max-width: 400px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  z-index: 500;
+  box-shadow: var(--shadow-accent), var(--shadow-lg);
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+.ride-request-popup.visible {
+  transform: translateX(-50%) translateY(0);
+}
+.popup-timer {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.popup-timer-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  animation: timerDown 25s linear forwards;
+}
+@keyframes timerDown { from { width:100%; } to { width:0%; } }
+.popup-route {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin: .75rem 0;
+}
+.popup-route-item {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: .82rem;
+}
+.popup-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Active ride controls */
+.active-ride-bar {
+  position: fixed;
+  bottom: var(--nav-h);
+  left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px;
+  z-index:200;
+  padding: 0 .75rem .75rem;
+  display: none;
+}
+.active-ride-card {
+  background: rgba(17,17,24,.96);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-xl);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-lg);
+}
+</style>
+</head>
+<body>
+
+<div class="map-wrapper"><div id="map"></div></div>
+
+<!-- Top bar -->
+<div class="driver-top-bar">
+  <div class="driver-status-bar">
+    <div class="online-label">
+      <span id="statusText">Desconectado</span>
+      <small id="statusSub">Activa para recibir viajes</small>
+    </div>
+    <label class="toggle-switch">
+      <input type="checkbox" id="onlineToggle" onchange="toggleOnlineStatus(this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <button class="map-btn" onclick="centerMap()"><i class="fa fa-location-crosshairs"></i></button>
+</div>
+
+<!-- Earnings bar -->
+<div class="earnings-bar">
+  <div class="earnings-card">
+    <div class="earn-stat">
+      <div class="earn-val" id="todayEarnings">$0.00</div>
+      <div class="earn-lab">Hoy</div>
+    </div>
+    <div class="earn-sep"></div>
+    <div class="earn-stat">
+      <div class="earn-val" id="todayTrips">0</div>
+      <div class="earn-lab">Viajes</div>
+    </div>
+    <div class="earn-sep"></div>
+    <div class="earn-stat">
+      <div class="earn-val" id="driverRating">5.0 ⭐</div>
+      <div class="earn-lab">Rating</div>
+    </div>
+  </div>
+</div>
+
+<!-- Ride request popup -->
+<div class="ride-request-popup" id="rideRequestPopup">
+  <div class="popup-timer"><div class="popup-timer-bar" id="timerBar"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+    <h3 style="font-size:1rem">Nueva solicitud</h3>
+    <div style="text-align:right">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--accent)" id="popupFare">$–</div>
+      <div style="font-size:.65rem;color:var(--text-muted)" id="popupDist">– km</div>
+    </div>
+  </div>
+  <div class="popup-route">
+    <div class="popup-route-item">
+      <span class="popup-dot" style="background:var(--accent)"></span>
+      <span id="popupOrigin" style="flex:1" class="truncate">–</span>
+    </div>
+    <div style="margin-left:4px;width:2px;height:16px;background:var(--border);margin-bottom:2px"></div>
+    <div class="popup-route-item">
+      <span class="popup-dot" style="background:var(--danger)"></span>
+      <span id="popupDest" style="flex:1" class="truncate">–</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:.75rem;margin-top:.75rem">
+    <button class="btn btn-ghost" onclick="declineRide()" style="flex:1">
+      <i class="fa fa-xmark"></i> Rechazar
+    </button>
+    <button class="btn btn-primary" onclick="acceptRide()" style="flex:2">
+      <i class="fa fa-check"></i> Aceptar
+    </button>
+  </div>
+</div>
+
+<!-- Active ride controls -->
+<div class="active-ride-bar" id="activeRideBar">
+  <div class="active-ride-card">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">
+      <div class="avatar avatar-sm" id="passengerAvatar"><i class="fa fa-user"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.9rem" id="passengerName">–</div>
+        <div style="font-size:.72rem;color:var(--text-muted)" id="rideStatusLabel">Conductor asignado</div>
+      </div>
+      <span class="badge badge-progress" id="rideStatusBadge">En curso</span>
+    </div>
+    <div style="display:flex;gap:.65rem" id="rideActionBtns">
+      <button class="btn btn-secondary btn-sm" onclick="callPassenger()" style="flex:1">
+        <i class="fa fa-phone"></i> Llamar
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="nextRideStep()" style="flex:2" id="nextStepBtn">
+        <i class="fa fa-play"></i> Iniciar Viaje
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Map controls -->
+<div class="map-controls" style="bottom:calc(var(--nav-h) + 180px)">
+  <button class="map-btn" onclick="map.zoomIn()"><i class="fa fa-plus"></i></button>
+  <button class="map-btn" onclick="map.zoomOut()"><i class="fa fa-minus"></i></button>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a class="nav-item active" href="home.html"><i class="fa fa-house"></i><span>Inicio</span></a>
+  <a class="nav-item" href="earnings.html"><i class="fa fa-wallet"></i><span>Ganancias</span></a>
+  <a class="nav-item" href="profile.html"><i class="fa fa-user-circle"></i><span>Perfil</span></a>
+</nav>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/map.js"></script>
+<script src="../js/driver.js"></script>
+</body>
+</html>
